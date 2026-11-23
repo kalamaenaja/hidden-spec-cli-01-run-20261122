@@ -150,7 +150,11 @@ function reindent(text: string, f: string, p: string): string {
   return text.startsWith(p) ? f + text.slice(p.length) : text;
 }
 
-/** Replace the O lines at `at` with the N lines, keeping the rest of the file. */
+/** Replace the O lines at `at` with the N lines, keeping the rest of the file.
+ *  SPEC.md section 5: at tier 2 only, a non-blank added line that starts with
+ *  O's first-line indent P is re-indented to the file's first matched line
+ *  indent F; at tiers 0 and 1 every added line is written as it is. A context
+ *  line is always the file's own matched line, never the patch's text. */
 function applyReplacement(fileLines: string[], at: number, o: string[], n: NewLine[], tier: number): string[] {
   const out = fileLines.slice(0, at);
   if (o.length > 0) {
@@ -231,6 +235,8 @@ function parseUnified(lines: string[]): Section[] {
 
   const closeHunk = (): void => {
     if (hunk === null || sec === null) return;
+    // SPEC.md section 6: empty lines at the end of a body are not part of it,
+    // so trailing empty context lines are dropped before O and N are built.
     while (hunk.body.length > 0) {
       const last = hunk.body[hunk.body.length - 1]!;
       if (last.kind === ' ' && last.text === '' && !last.backslash) hunk.body.pop();
